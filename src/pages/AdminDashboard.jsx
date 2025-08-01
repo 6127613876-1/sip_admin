@@ -1,146 +1,262 @@
-// src/components/AdminDashboard.jsx
-import React, { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Pie } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { api, questions } from '../api/feedbackApi';
+import * as XLSX from 'xlsx';
 
-const departments = [
-  "ALL", "CSE", "IT", "ECE", "EEE", "MECH", "AI-ML", "MECHATRONICS", "CSBS", "CIVIL"
-];
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
-const AdminDashboard = () => {
+const departmentColors = {
+  CSE: 'bg-blue-100',
+  IT: 'bg-green-100',
+  ECE: 'bg-yellow-100',
+  EEE: 'bg-purple-100',
+  MECH: 'bg-red-100',
+  'AI-ML': 'bg-pink-100',
+  MECHATRONICS: 'bg-indigo-100',
+  CSBS: 'bg-teal-100',
+  CIVIL: 'bg-orange-100'
+};
+
+export const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [feedbackData, setFeedbackData] = useState([]);
-  const [questions, setQuestions] = useState({});
-  const [selectedDept, setSelectedDept] = useState('ALL');
-  const [selectedDay, setSelectedDay] = useState('ALL');
+  const [filters, setFilters] = useState({ day: 'ALL', dept: 'ALL' });
 
   useEffect(() => {
-    fetch('/data')
-      .then(res => res.json())
-      .then(setFeedbackData)
-      .catch(console.error);
-
-    fetch('/questions')
-      .then(res => res.json())
-      .then(setQuestions)
-      .catch(console.error);
+    const fetchData = async () => {
+      try {
+        const res = await fetch('https://sip-1-uple.onrender.com/api/feedback');
+        const data = await res.json();
+        setFeedbackData(data);
+      } catch (error) {
+        console.error("Failed to fetch feedback:", error);
+      }
+    };
+    fetchData();
   }, []);
 
-  const days = ["ALL", ...Array.from({ length: 15 }, (_, i) => `Day ${i + 1}`)];
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.id]: e.target.value });
+  };
 
-  const filtered = feedbackData.filter(entry =>
-    (selectedDept === 'ALL' || entry.dept === selectedDept) &&
-    (selectedDay === 'ALL' || entry.day === selectedDay)
-  );
+  const handleLogout = () => {
+    api.logout();
+    navigate('/admin-login');
+  };
 
-  const submissionCounts = filtered.reduce((acc, entry) => {
+  const filteredData = feedbackData.filter(entry => {
+    const dayMatch = filters.day === 'ALL' || entry.day === filters.day;
+    const deptMatch = filters.dept === 'ALL' || entry.dept === filters.dept;
+    return dayMatch && deptMatch;
+  });
+
+  // Grouped by day + time
+  const groupedData = filteredData.reduce((acc, entry) => {
+    const key = `${entry.day}-${entry.session.time}`;
+    if (!acc[key]) {
+      acc[key] = {
+        day: entry.day,
+        time: entry.session.time,
+        topic: entry.session.topic,
+        entries: []
+      };
+    }
+    acc[key].entries.push(entry);
+    return acc;
+  }, {});
+
+  const submissionCounts = filteredData.reduce((acc, entry) => {
     acc[entry.dept] = (acc[entry.dept] || 0) + 1;
     return acc;
   }, {});
 
-  const grouped = {};
-  filtered.forEach(entry => {
-    const key = `${entry.dept}-${entry.day}-${entry.session.topic}-${entry.session.time}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(entry);
-  });
-
   return (
-    <div className="p-6 max-w-7xl mx-auto text-gray-800">
-      <h1 className="text-3xl font-bold text-center text-orange-500 mb-6">
-        First Year SIP - Feedback Portal
-      </h1>
-
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
-        <h2 className="text-xl font-semibold">Feedback Questions</h2>
-        <ol className="list-decimal ml-5 mt-2">
-          {["Q1", "Q2", "Q3", "Q4"].map((q, idx) => (
-            <li key={q}><strong>{q}:</strong> {questions[q]}</li>
-          ))}
-        </ol>
-      </div>
-
-      <div className="flex flex-wrap gap-4 mb-4 items-center">
-        <div>
-          <label className="font-semibold mr-2">Filter by Department:</label>
-          <select value={selectedDept} onChange={e => setSelectedDept(e.target.value)}>
-            {departments.map(dept => <option key={dept}>{dept}</option>)}
-          </select>
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Admin Panel - Feedback</h1>
+          <button onClick={handleLogout} className="bg-red-500 text-white font-bold cursor-pointer py-2 px-4 rounded hover:bg-red-600">Logout</button>
         </div>
 
-        <div>
-          <label className="font-semibold mr-2">Filter by Day:</label>
-          <select value={selectedDay} onChange={e => setSelectedDay(e.target.value)}>
-            {days.map(day => <option key={day}>{day}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="mb-6 bg-yellow-100 p-4 rounded-lg">
-        <h3 className="font-semibold">Total Submissions:</h3>
-        {Object.entries(submissionCounts).length > 0 ? (
-          <ul className="list-disc ml-6">
-            {Object.entries(submissionCounts).map(([dept, count]) => (
-              <li key={dept}><strong>{dept}</strong>: {count}</li>
+        {/* Feedback Questions */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200">
+          <h3 className="text-xl font-semibold mb-4 text-gray-700">📋 Feedback Questions</h3>
+          <ol className="list-decimal list-inside space-y-1 text-gray-600">
+            {Object.entries(questions).map(([key, value]) => (
+              <li key={key}><strong>{key}:</strong> {value}</li>
             ))}
-          </ul>
-        ) : (
-          <p>No submissions for selected filters.</p>
-        )}
+          </ol>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200 flex flex-wrap gap-6 items-center">
+          <label className="font-semibold mr-2 text-gray-700">Day:</label>
+          <select id="day" onChange={handleFilterChange} value={filters.day} className="p-2 border rounded-md text-sm cursor-pointer">
+            <option value="ALL">All Days</option>
+            {[...Array(15)].map((_, i) => (
+              <option key={i} value={`Day ${i + 1}`}>Day {i + 1}</option>
+            ))}
+          </select>
+          <label className="font-semibold mr-2 text-gray-700">Department:</label>
+          <select id="dept" onChange={handleFilterChange} value={filters.dept} className="p-2 border rounded-md text-sm cursor-pointer">
+            <option value="ALL">All Departments</option>
+            {Object.keys(departmentColors).map((dept) => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Submission Summary */}
+        <div className="bg-white border border-yellow-300 rounded-lg shadow p-6 mb-8">
+          <h3 className="text-xl font-semibold mb-3 text-yellow-600">📊 Submission Summary</h3>
+          {Object.keys(submissionCounts).length > 0 ? (
+            <ul className="list-disc list-inside text-gray-700">
+              {Object.entries(submissionCounts).map(([dept, count]) => (
+                <li key={dept}><strong>{dept}</strong>: {count}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No submissions for selected filters.</p>
+          )}
+        </div>
+
+        {/* Feedback Charts and Tables */}
+        <div className="space-y-8">
+          {Object.values(groupedData).length > 0 ? Object.values(groupedData).map((group, index) => {
+            // Pie chart: department counts for this group (day+time)
+            const deptCounts = group.entries.reduce((acc, entry) => {
+              acc[entry.dept] = (acc[entry.dept] || 0) + 1;
+              return acc;
+            }, {});
+
+            const pieData = {
+              labels: Object.keys(deptCounts),
+              datasets: [
+                {
+                  data: Object.values(deptCounts),
+                  backgroundColor: Object.keys(deptCounts).map(
+                    dept => {
+                      // Use tailwind color classes as hex fallback
+                      const colorMap = {
+                        CSE: '#60a5fa',
+                        IT: '#6ee7b7',
+                        ECE: '#fde68a',
+                        EEE: '#c4b5fd',
+                        MECH: '#fca5a5',
+                        'AI-ML': '#f9a8d4',
+                        MECHATRONICS: '#a5b4fc',
+                        CSBS: '#5eead4',
+                        CIVIL: '#fdba74'
+                      };
+                      return colorMap[dept] || '#d1d5db';
+                    }
+                  )
+                }
+              ]
+            };
+
+            const pieOptions = {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: true, position: 'bottom' },
+                tooltip: { enabled: true }
+              }
+            };
+
+           const handleDownload = () => {
+            const entries = group.entries;
+
+            // Get the question keys in order: Q1, Q2, etc.
+            const questionKeys = Object.keys(questions);
+
+            // Convert entries to a flat object per row for Excel
+            const excelData = entries.map(entry => {
+              const row = {
+                Name: entry.name || entry.user,
+                Department: entry.dept
+              };
+
+              // Map answers to Q1, Q2, ...
+              questionKeys.forEach((qKey, index) => {
+                row[qKey] = entry.answers[index] || '';
+              });
+
+              return row;
+            });
+
+            // Generate worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Generate workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback');
+
+            // File name format: Day_10AM_feedback.xlsx
+            const filename = `${group.day.replace(/\s/g, '_')}_${group.time.replace(/\s|:/g, '_')}_feedback.xlsx`;
+            XLSX.writeFile(workbook, filename);
+          };
+
+            return (
+              <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">{group.day} - {group.time}</h3>
+                    <h4 className="text-md font-medium text-gray-600 mb-2">{group.topic}</h4>
+                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="bg-blue-500 cursor-pointer text-white px-4 py-2 rounded hover:bg-blue-600 text-sm font-semibold"
+                  >
+                    Download
+                  </button>
+                </div>
+                <div className="mb-6 h-60 max-w-lg mx-auto">
+                  <Pie data={pieData} options={pieOptions} />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full table-auto border text-sm">
+                    <thead className="bg-gray-100 text-gray-700">
+                      <tr>
+                        <th className="py-2 px-4 border">Name</th>
+                        <th className="py-2 px-4 border">Department</th>
+                        {Object.keys(questions).map((q, i) => (
+                          <th key={i} className="py-2 px-4 border">{q}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.entries.map((entry, i) => (
+                        <tr key={i} className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}>
+                          <td className="py-2 px-4 border">{entry.name || entry.user}</td>
+                          <td className="py-2 px-4 border font-semibold">{entry.dept}</td>
+                          {entry.answers.map((ans, j) => (
+                            <td key={j} className="py-2 px-4 border">{ans}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          }) : (
+            <p className="text-center text-gray-500">No data available for the selected filters.</p>
+          )}
+        </div>
       </div>
-
-      {Object.entries(grouped).length === 0 && (
-        <p className="text-center text-gray-500 mt-10">No data available for the selected filters.</p>
-      )}
-
-      {Object.entries(grouped).map(([key, entries], index) => {
-        const [dept, day, topic, time] = key.split("-");
-        const pos = entries.filter(e =>
-          (e.answers[1] || "").toLowerCase().match(/yes|somewhat|good|ok/)
-        ).length;
-        const neg = entries.length - pos;
-
-        const data = {
-          labels: ['Helpful', 'Not Helpful'],
-          datasets: [{
-            label: 'Feedback',
-            data: [pos, neg],
-            backgroundColor: ['#fcb045', '#fd1d1d']
-          }]
-        };
-
-        const tableHeaders = entries[0].answers.map((_, i) => `Q${i + 1}`);
-
-        return (
-          <div key={key} className="mb-10 bg-white p-5 rounded-xl shadow">
-            <h3 className="text-xl font-semibold mb-1">{dept} - {day}</h3>
-            <h4 className="mb-4 text-gray-600">{topic} ({time})</h4>
-            <Bar data={data} />
-            <table className="w-full mt-5 border border-gray-300 text-center">
-              <thead className="bg-orange-500 text-white">
-                <tr>
-                  <th>Name</th>
-                  {tableHeaders.map((q, idx) => (
-                    <th key={idx}>{q}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td>{entry.user}</td>
-                    {entry.answers.map((ans, i) => (
-                      <td key={i}>{ans}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
     </div>
   );
 };
-
-export default AdminDashboard;
-

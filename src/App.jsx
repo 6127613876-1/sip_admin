@@ -1,7 +1,15 @@
-import { AdminLoginPage } from './pages/AdminLoginPage';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { ProtectedRoute } from './components/ProtectedRoute';
-<Route path="/admin-login" element={<AdminLoginPage />} />
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+import  AdminLoginPage  from './pages/AdminLoginPage';
+import  {AdminDashboard}  from './pages/AdminDashboard';
+import  ProtectedRoute  from './components/ProtectedRoute';
+
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<AdminLoginPage />} />
         <Route 
           path="/admin" 
           element={
@@ -10,5 +18,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
             </ProtectedRoute>
           } 
         />
-
-
+      </Routes>
+    </Router>
+  );
+}
