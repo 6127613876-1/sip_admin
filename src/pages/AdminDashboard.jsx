@@ -61,8 +61,12 @@ export const AdminDashboard = () => {
     return dayMatch && deptMatch;
   });
 
-  // Grouped by day + time
-  const groupedData = filteredData.reduce((acc, entry) => {
+  const getDayNumber = (dayStr) => {
+    const match = dayStr.match(/Day\s*(\d+)/i);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  const groupedDataObj = filteredData.reduce((acc, entry) => {
     const key = `${entry.day}-${entry.session.time}`;
     if (!acc[key]) {
       acc[key] = {
@@ -75,6 +79,14 @@ export const AdminDashboard = () => {
     acc[key].entries.push(entry);
     return acc;
   }, {});
+
+  // Grouped by day + time
+  const groupedData = Object.values(groupedDataObj).sort((a, b) => {
+    const dayA = getDayNumber(a.day);
+    const dayB = getDayNumber(b.day);
+    if (dayA !== dayB) return dayA - dayB;
+    return a.time.localeCompare(b.time);
+  });
 
   const submissionCounts = filteredData.reduce((acc, entry) => {
     acc[entry.dept] = (acc[entry.dept] || 0) + 1;
