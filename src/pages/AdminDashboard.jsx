@@ -67,18 +67,21 @@ export const AdminDashboard = () => {
   };
 
   const groupedDataObj = filteredData.reduce((acc, entry) => {
-    const key = `${entry.day}-${entry.session.time}`;
-    if (!acc[key]) {
-      acc[key] = {
-        day: entry.day,
-        time: entry.session.time,
-        topic: entry.session.topic,
-        entries: []
-      };
-    }
-    acc[key].entries.push(entry);
-    return acc;
-  }, {});
+  // Skip if session or session.time is missing
+  if (!entry.session || !entry.session.time) return acc;
+
+  const key = `${entry.day}-${entry.session.time}`;
+  if (!acc[key]) {
+    acc[key] = {
+      day: entry.day,
+      time: entry.session.time,
+      topic: entry.session.topic || '',
+      entries: []
+    };
+  }
+  acc[key].entries.push(entry);
+  return acc;
+}, {});
 
   // Grouped by day + time
   const groupedData = Object.values(groupedDataObj).sort((a, b) => {
