@@ -52,7 +52,7 @@ export const AdminDashboard = () => {
 
   const handleLogout = () => {
     api.logout();
-    navigate('/admin-login');
+    navigate('/');
   };
 
   const filteredData = feedbackData.filter(entry => {

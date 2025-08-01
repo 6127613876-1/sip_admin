@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/feedbackApi';
+import '../index.css'
 
 export const AdminLoginPage = () => {
     const navigate = useNavigate();
@@ -18,7 +19,7 @@ export const AdminLoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen  flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen  flex flex-col items-center justify-center p-4" >
             <img src="images/college_logo.png" alt="College Logo" className="w-20 max-w-md h-auto mb-6 rounded-lg shadow-lg" />     
             <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">First Year SIP-Feedback Portal</h1>
             <div className="w-full max-w-sm bg-white rounded-lg shadow-xl p-8">

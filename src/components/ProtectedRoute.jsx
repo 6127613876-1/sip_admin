@@ -5,7 +5,7 @@ import { api } from '../api/feedbackApi'; // In a real app structure
 const ProtectedRoute = ({ children }) => {
     const isAdmin = api.isAdmin();
     if (!isAdmin) {
-        return <Navigate to="/admin-login" replace />;
+        return <Navigate to="/admin" replace />;
     }
     return children;
 };
