@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 body{
-    background-image: url('images/college_bg.jpeg');
+    background-image: url('../src/assets/college_bg.jpeg');
     background-size: cover;
     background-position: center;
 }
