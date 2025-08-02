@@ -257,8 +257,9 @@ export const AdminDashboard = () => {
                         <tr key={i} className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}>
                           <td className="py-2 px-4 border">{entry.name || entry.user}</td>
                           <td className="py-2 px-4 border font-semibold">{entry.dept}</td>
-                          {entry.answers.map((ans, j) => (
-                            <td key={j} className="py-2 px-4 border">{ans}</td>
+                          {/* Always show all questions, even if answers are missing */}
+                          {Object.keys(questions).map((_, j) => (
+                            <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
                           ))}
                         </tr>
                       ))}
