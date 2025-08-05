@@ -31,14 +31,13 @@ export const questions = {
   },
 
   FinalFeedbackques: {
-        Q1:"To what extent did the induction program help you feel confident, informed, and prepared to begin your academic journey at our institution?",
-        Q2:"How would you rate the overall coordination and organization of the SIP program?",
-        Q3:"Were the basic amenities (seating, refreshments, transport, etc.) adequate throughout the program?",
-        Q4:"Was the sound system, session timing, and venue management handled effectively?",
-        Q5:"Please share your overall perspective on the SIP experience in a few sentences and which three sessions or activities did you find most impactful or engaging"                                                                                                                                                                }
-      }; 
+    Q1: "To what extent did the induction program help you feel confident, informed, and prepared to begin your academic journey at our institution?",
+    Q2: "How would you rate the overall coordination and organization of the SIP program?",
+    Q3: "Were the basic amenities (seating, refreshments, transport, etc.) adequate throughout the program?",
+    Q4: "Was the sound system, session timing, and venue management handled effectively?",
+    Q5: "Please share your overall perspective on the SIP experience in a few sentences and which three sessions or activities did you find most impactful or engaging"
+  }
 };
-
 /**
  * Helper to get sorted dates for a department from sessionData.
  * The dates in sessionData are keys in DD.MM.YYYY format.
