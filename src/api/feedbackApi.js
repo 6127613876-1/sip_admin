@@ -36,7 +36,7 @@ export const questions = {
         Q3:"Were the basic amenities (seating, refreshments, transport, etc.) adequate throughout the program?",
         Q4:"Was the sound system, session timing, and venue management handled effectively?",
         Q5:"Please share your overall perspective on the SIP experience in a few sentences and which three sessions or activities did you find most impactful or engaging"                                                                                                                                                                }
-      };
+      }; 
 };
 
 /**
