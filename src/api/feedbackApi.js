@@ -39,7 +39,6 @@ export const questions = {
       };
 };
 
-
 /**
  * Helper to get sorted dates for a department from sessionData.
  * The dates in sessionData are keys in DD.MM.YYYY format.
