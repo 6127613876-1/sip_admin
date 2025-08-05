@@ -1,10 +1,24 @@
-// src/api/feedbackApi.js
-import sessionData from '../data/sessionData'; // Adjust path if needed
+ // src/api/feedbackApi.js
+
+import sessionData from '../data/sessionData'; // Adjust the path if needed
 
 const API_URL = 'https://sip-1-uple.onrender.com/';
 
+/**
+ * Predefined feedback question sets for different session types
+ */
 export const questions = {
-  Feedback: {
+  generalFeedback: {
+    Q1: "How would you rate your overall experience in this session?",
+    Q2: "Was the objective or purpose of the session clearly conveyed?",
+    Q3: "Was the content or activity relevant and engaging?",
+    Q4: "Did the session meet your expectations?",
+    Q5: "Was the session organized and conducted efficiently?",
+    Q6: "Did the session contribute to your understanding of the institution or program?",
+    Q7: "Suggestions/Questions/Feedback"
+  },
+
+  speakerFeedback: {
     Q1: "Opinion about overall session",
     Q2: "Clarity in the speech",
     Q3: "Speaker's interaction with the students",
@@ -14,7 +28,7 @@ export const questions = {
     Q7: "Suggestions/Questions/Feedback"
   },
 
-  keeladiVisitFeedback: {
+  keeladiFeedback: {
     Q1: "How would you rate your overall learning experience during the Keeladi visit?",
     Q2: "Did the trip enhance your understanding of ancient Tamil civilization and heritage?",
     Q3: "Was the explanation at the site informative and engaging?",
@@ -30,7 +44,7 @@ export const questions = {
     Q5: "Suggestions/Questions/Feedback"
   },
 
-  FinalFeedbackques: {
+  finalFeedback: {
     Q1: "To what extent did the induction program help you feel confident, informed, and prepared to begin your academic journey at our institution?",
     Q2: "How would you rate the overall coordination and organization of the SIP program?",
     Q3: "Were the basic amenities (seating, refreshments, transport, etc.) adequate throughout the program?",
@@ -38,6 +52,7 @@ export const questions = {
     Q5: "Please share your overall perspective on the SIP experience in a few sentences and which three sessions or activities did you find most impactful or engaging"
   }
 };
+
 /**
  * Helper to get sorted dates for a department from sessionData.
  * The dates in sessionData are keys in DD.MM.YYYY format.
@@ -98,7 +113,9 @@ export const api = {
     }
   },
 
-  // Admin and user login/logout logic
+  /**
+   * Admin login
+   */
   login: (password) => {
     if (password === 'admin123') {
       localStorage.setItem('isAdmin', 'true');
@@ -150,3 +167,4 @@ export const api = {
     }));
   }
 };
+
