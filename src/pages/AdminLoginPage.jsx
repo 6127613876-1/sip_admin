@@ -22,9 +22,10 @@ export const AdminLoginPage = () => {
         <div className="min-h-screen  flex flex-col items-center justify-center p-4" >
             <img src="images/college_logo.png" alt="College Logo" className="w-20 max-w-md h-auto mb-4 rounded-lg shadow-lg" />     
 {/*             <h1 className="text-2xl font-bold text-center text-white-800 mb-8">First Year Student Induction Programme-Feedback Portal</h1> */}
-            <h1 className="text-2xl font-bold text-center text-red-900 mb-8">
+            <h1 className="text-2xl font-bold text-center text-red-900 bg-white px-6 py-4 rounded-md shadow mb-8">
   First Year Student Induction Programme - Feedback Portal
 </h1>
+
 
             <div className="w-full max-w-sm bg-white rounded-lg shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-center mb-6 text-gray-700">Admin Login</h2>
