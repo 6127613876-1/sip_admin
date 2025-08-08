@@ -681,7 +681,12 @@ export const AdminDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Admin Panel - Feedback</h1>
-          <button onClick={handleLogout} className="bg-red-500 text-white font-bold cursor-pointer py-2 px-4 rounded hover:bg-red-600">Logout</button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white font-bold cursor-pointer py-2 px-4 rounded hover:bg-red-600"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Feedback Questions */}
@@ -824,21 +829,32 @@ export const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {group.entries.map((entry, i) => (
-                        <tr key={i} className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}>
-                          <td className="py-2 px-4 border">{entry.name || entry.user}</td>
-                          <td className="py-2 px-4 border font-semibold">{entry.dept}</td>
-                          <td className="py-2 px-4 border">{entry.slot || ''}</td>
-                          {Object.keys(questions).map((_, j) => (
-                            <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
-                          ))}
-                          {i === 0 && (
-                            <td className="py-2 px-4 border bg-red-50 font-semibold text-red-600" rowSpan={group.entries.length}>
-                              {missingCount > 0 ? missingCount : 0}
+                      {group.entries.map((entry, i) => {
+                        const missingPerPerson =
+                          entry.missingCount !== undefined
+                            ? entry.missingCount
+                            : Object.keys(questions).reduce(
+                                (count, _, idx) => count + (!entry.answers?.[idx] ? 1 : 0),
+                                0
+                              );
+
+                        return (
+                          <tr
+                            key={i}
+                            className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}
+                          >
+                            <td className="py-2 px-4 border">{entry.name || entry.user}</td>
+                            <td className="py-2 px-4 border font-semibold">{entry.dept}</td>
+                            <td className="py-2 px-4 border">{entry.slot || ''}</td>
+                            {Object.keys(questions).map((_, j) => (
+                              <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
+                            ))}
+                            <td className="py-2 px-4 border bg-red-50 font-semibold text-red-600">
+                              {missingPerPerson}
                             </td>
-                          )}
-                        </tr>
-                      ))}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -849,6 +865,10 @@ export const AdminDashboard = () => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
     </div>
   );
 };
