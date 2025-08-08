@@ -607,11 +607,13 @@ const departmentColors = {
   CIVIL: 'bg-orange-100'
 };
 
+// 🔹 Adjust this to the actual total expected feedback per session
+const TOTAL_EXPECTED_PER_SESSION = 60;
+
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [feedbackData, setFeedbackData] = useState([]);
   const [filters, setFilters] = useState({ day: 'ALL', dept: 'ALL' });
-  const [missingFeedbacks, setMissingFeedbacks] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -624,12 +626,6 @@ export const AdminDashboard = () => {
       }
     };
     fetchData();
-
-    // 🔹 Load missing feedback counts from localStorage
-    const savedMissing = localStorage.getItem("missingFeedbackCount");
-    if (savedMissing) {
-      setMissingFeedbacks(JSON.parse(savedMissing));
-    }
   }, []);
 
   const handleFilterChange = (e) => {
@@ -653,9 +649,7 @@ export const AdminDashboard = () => {
   };
 
   const groupedDataObj = filteredData.reduce((acc, entry) => {
-    // Skip if session or session.time is missing
     if (!entry.session || !entry.session.time) return acc;
-
     const key = `${entry.day}-${entry.session.time}`;
     if (!acc[key]) {
       acc[key] = {
@@ -669,7 +663,6 @@ export const AdminDashboard = () => {
     return acc;
   }, {});
 
-  // Grouped by day + time
   const groupedData = Object.values(groupedDataObj).sort((a, b) => {
     const dayA = getDayNumber(a.day);
     const dayB = getDayNumber(b.day);
@@ -733,50 +726,35 @@ export const AdminDashboard = () => {
           )}
         </div>
 
-        {/* 🔹 Missing Feedback Summary */}
-        <div className="bg-white border border-red-300 rounded-lg shadow p-6 mb-8">
-          <h3 className="text-xl font-semibold mb-3 text-red-600">❗ Missing Feedbacks Per Day</h3>
-          {Object.keys(missingFeedbacks).length > 0 ? (
-            <ul className="list-disc list-inside text-gray-700">
-              {Object.entries(missingFeedbacks).map(([day, count]) => (
-                <li key={day}><strong>{day}</strong>: {count} pending</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No missing feedback records found.</p>
-          )}
-        </div>
-
         {/* Feedback Charts and Tables */}
         <div className="space-y-8">
-          {Object.values(groupedData).length > 0 ? Object.values(groupedData).map((group, index) => {
-            // Pie chart: department counts for this group (day+time)
+          {groupedData.length > 0 ? groupedData.map((group, index) => {
             const deptCounts = group.entries.reduce((acc, entry) => {
               acc[entry.dept] = (acc[entry.dept] || 0) + 1;
               return acc;
             }, {});
+
+            const missingCount = TOTAL_EXPECTED_PER_SESSION - group.entries.length;
 
             const pieData = {
               labels: Object.keys(deptCounts),
               datasets: [
                 {
                   data: Object.values(deptCounts),
-                  backgroundColor: Object.keys(deptCounts).map(
-                    dept => {
-                      const colorMap = {
-                        CSE: '#60a5fa',
-                        IT: '#6ee7b7',
-                        ECE: '#fde68a',
-                        EEE: '#c4b5fd',
-                        MECH: '#fca5a5',
-                        'AI-ML': '#f9a8d4',
-                        MECHATRONICS: '#a5b4fc',
-                        CSBS: '#5eead4',
-                        CIVIL: '#fdba74'
-                      };
-                      return colorMap[dept] || '#d1d5db';
-                    }
-                  )
+                  backgroundColor: Object.keys(deptCounts).map(dept => {
+                    const colorMap = {
+                      CSE: '#60a5fa',
+                      IT: '#6ee7b7',
+                      ECE: '#fde68a',
+                      EEE: '#c4b5fd',
+                      MECH: '#fca5a5',
+                      'AI-ML': '#f9a8d4',
+                      MECHATRONICS: '#a5b4fc',
+                      CSBS: '#5eead4',
+                      CIVIL: '#fdba74'
+                    };
+                    return colorMap[dept] || '#d1d5db';
+                  })
                 }
               ]
             };
@@ -800,8 +778,8 @@ export const AdminDashboard = () => {
                   Department: entry.dept,
                   Slot: entry.slot || ''
                 };
-                questionKeys.forEach((qKey, index) => {
-                  row[qKey] = entry.answers[index] || '';
+                questionKeys.forEach((qKey, idx) => {
+                  row[qKey] = entry.answers[idx] || '';
                 });
                 return row;
               });
@@ -820,6 +798,7 @@ export const AdminDashboard = () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">{group.day} - {group.time}</h3>
                     <h4 className="text-md font-medium text-gray-600 mb-2">{group.topic}</h4>
+                    <p className="text-sm text-red-600 font-semibold">Missing Feedbacks: {missingCount > 0 ? missingCount : 0}</p>
                   </div>
                   <button
                     onClick={handleDownload}
@@ -841,6 +820,7 @@ export const AdminDashboard = () => {
                         {Object.keys(questions).map((q, i) => (
                           <th key={i} className="py-2 px-4 border">{q}</th>
                         ))}
+                        <th className="py-2 px-4 border bg-red-100">Missing Feedbacks</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -852,6 +832,11 @@ export const AdminDashboard = () => {
                           {Object.keys(questions).map((_, j) => (
                             <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
                           ))}
+                          {i === 0 && (
+                            <td className="py-2 px-4 border bg-red-50 font-semibold text-red-600" rowSpan={group.entries.length}>
+                              {missingCount > 0 ? missingCount : 0}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -867,3 +852,4 @@ export const AdminDashboard = () => {
     </div>
   );
 };
+
