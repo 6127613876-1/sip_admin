@@ -8,7 +8,7 @@
 //   BarElement,
 //   ArcElement,
 //   Title,
-//   Tooltip,
+//   Tooltip, 
 //   Legend
 // } from 'chart.js'; 
 // import { api, questions } from '../api/feedbackApi';
