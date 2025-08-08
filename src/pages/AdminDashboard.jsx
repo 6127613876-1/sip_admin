@@ -871,6 +871,7 @@
 
 
 
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pie } from 'react-chartjs-2';
@@ -940,20 +941,23 @@ export const AdminDashboard = () => {
   };
 
   const groupedDataObj = filteredData.reduce((acc, entry) => {
-    if (!entry.session || !entry.session.time) return acc;
-    const key = `${entry.day}-${entry.session.time}`;
-    if (!acc[key]) {
-      acc[key] = {
-        day: entry.day,
-        time: entry.session.time,
-        topic: entry.session.topic || '',
-        entries: []
-      };
-    }
-    acc[key].entries.push(entry);
-    return acc;
-  }, {});
+  // Skip if session or session.time is missing
+  if (!entry.session || !entry.session.time) return acc;
 
+  const key = `${entry.day}-${entry.session.time}`;
+  if (!acc[key]) {
+    acc[key] = {
+      day: entry.day,
+      time: entry.session.time,
+      topic: entry.session.topic || '',
+      entries: []
+    };
+  }
+  acc[key].entries.push(entry);
+  return acc;
+}, {});
+
+  // Grouped by day + time
   const groupedData = Object.values(groupedDataObj).sort((a, b) => {
     const dayA = getDayNumber(a.day);
     const dayB = getDayNumber(b.day);
@@ -972,12 +976,7 @@ export const AdminDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Admin Panel - Feedback</h1>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white font-bold cursor-pointer py-2 px-4 rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
+          <button onClick={handleLogout} className="bg-red-500 text-white font-bold cursor-pointer py-2 px-4 rounded hover:bg-red-600">Logout</button>
         </div>
 
         {/* Feedback Questions */}
@@ -1024,34 +1023,35 @@ export const AdminDashboard = () => {
 
         {/* Feedback Charts and Tables */}
         <div className="space-y-8">
-          {groupedData.length > 0 ? groupedData.map((group, index) => {
+          {Object.values(groupedData).length > 0 ? Object.values(groupedData).map((group, index) => {
+            // Pie chart: department counts for this group (day+time)
             const deptCounts = group.entries.reduce((acc, entry) => {
               acc[entry.dept] = (acc[entry.dept] || 0) + 1;
               return acc;
             }, {});
-
-            // ✅ Exact missing count from student data
-            const missingCount = group.entries.reduce((sum, e) => sum + (e.missingCount ?? 0), 0);
 
             const pieData = {
               labels: Object.keys(deptCounts),
               datasets: [
                 {
                   data: Object.values(deptCounts),
-                  backgroundColor: Object.keys(deptCounts).map(dept => {
-                    const colorMap = {
-                      CSE: '#60a5fa',
-                      IT: '#6ee7b7',
-                      ECE: '#fde68a',
-                      EEE: '#c4b5fd',
-                      MECH: '#fca5a5',
-                      'AI-ML': '#f9a8d4',
-                      MECHATRONICS: '#a5b4fc',
-                      CSBS: '#5eead4',
-                      CIVIL: '#fdba74'
-                    };
-                    return colorMap[dept] || '#d1d5db';
-                  })
+                  backgroundColor: Object.keys(deptCounts).map(
+                    dept => {
+                      // Use tailwind color classes as hex fallback
+                      const colorMap = {
+                        CSE: '#60a5fa',
+                        IT: '#6ee7b7',
+                        ECE: '#fde68a',
+                        EEE: '#c4b5fd',
+                        MECH: '#fca5a5',
+                        'AI-ML': '#f9a8d4',
+                        MECHATRONICS: '#a5b4fc',
+                        CSBS: '#5eead4',
+                        CIVIL: '#fdba74'
+                      };
+                      return colorMap[dept] || '#d1d5db';
+                    }
+                  )
                 }
               ]
             };
@@ -1065,30 +1065,40 @@ export const AdminDashboard = () => {
               }
             };
 
-            const handleDownload = () => {
-              const entries = group.entries;
-              const questionKeys = Object.keys(questions);
+           const handleDownload = () => {
+            const entries = group.entries;
 
-              const excelData = entries.map(entry => {
-                const row = {
-                  Name: entry.name || entry.user,
-                  Department: entry.dept,
-                  Slot: entry.slot || '',
-                  MissingCount: entry.missingCount ?? 0
-                };
-                questionKeys.forEach((qKey, idx) => {
-                  row[qKey] = entry.answers[idx] || '';
-                });
-                return row;
+            // Get the question keys in order: Q1, Q2, etc.
+            const questionKeys = Object.keys(questions);
+
+            // Convert entries to a flat object per row for Excel
+            const excelData = entries.map(entry => {
+              const row = {
+  Name: entry.name || entry.user,
+  Department: entry.dept,
+  Slot: entry.slot || ''
+};
+
+
+              // Map answers to Q1, Q2, ...
+              questionKeys.forEach((qKey, index) => {
+                row[qKey] = entry.answers[index] || '';
               });
 
-              const worksheet = XLSX.utils.json_to_sheet(excelData);
-              const workbook = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback');
+              return row;
+            });
 
-              const filename = `${group.day.replace(/\s/g, '_')}_${group.time.replace(/\s|:/g, '_')}_feedback.xlsx`;
-              XLSX.writeFile(workbook, filename);
-            };
+            // Generate worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Generate workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedback');
+
+            // File name format: Day_10AM_feedback.xlsx
+            const filename = `${group.day.replace(/\s/g, '_')}_${group.time.replace(/\s|:/g, '_')}_feedback.xlsx`;
+            XLSX.writeFile(workbook, filename);
+          };
 
             return (
               <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
@@ -1096,7 +1106,6 @@ export const AdminDashboard = () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">{group.day} - {group.time}</h3>
                     <h4 className="text-md font-medium text-gray-600 mb-2">{group.topic}</h4>
-                    <p className="text-sm text-red-600 font-semibold">Missing Feedbacks: {missingCount}</p>
                   </div>
                   <button
                     onClick={handleDownload}
@@ -1111,31 +1120,27 @@ export const AdminDashboard = () => {
                 <div className="overflow-x-auto">
                   <table className="min-w-full table-auto border text-sm">
                     <thead className="bg-gray-100 text-gray-700">
-                      <tr>
-                        <th className="py-2 px-4 border">Name</th>
-                        <th className="py-2 px-4 border">Department</th>
-                        <th className="py-2 px-4 border">Slot</th>
-                        {Object.keys(questions).map((q, i) => (
-                          <th key={i} className="py-2 px-4 border">{q}</th>
-                        ))}
-                        <th className="py-2 px-4 border bg-red-100">Missing Feedbacks</th>
-                      </tr>
-                    </thead>
+  <tr>
+    <th className="py-2 px-4 border">Name</th>
+    <th className="py-2 px-4 border">Department</th>
+    <th className="py-2 px-4 border">Slot</th>
+    {Object.keys(questions).map((q, i) => (
+      <th key={i} className="py-2 px-4 border">{q}</th>
+    ))}
+  </tr>
+</thead>
+
                     <tbody>
                       {group.entries.map((entry, i) => (
-                        <tr
-                          key={i}
-                          className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}
-                        >
+                        <tr key={i} className={`text-center hover:bg-gray-50 ${departmentColors[entry.dept] || ''}`}>
                           <td className="py-2 px-4 border">{entry.name || entry.user}</td>
                           <td className="py-2 px-4 border font-semibold">{entry.dept}</td>
-                          <td className="py-2 px-4 border">{entry.slot || ''}</td>
-                          {Object.keys(questions).map((_, j) => (
-                            <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
-                          ))}
-                          <td className="py-2 px-4 border bg-red-50 font-semibold text-red-600">
-                            {entry.missingCount ?? 0}
-                          </td>
+<td className="py-2 px-4 border">{entry.slot || ''}</td>
+{/* Always show all questions, even if answers are missing */}
+{Object.keys(questions).map((_, j) => (
+  <td key={j} className="py-2 px-4 border">{entry.answers?.[j] ?? ''}</td>
+))}
+
                         </tr>
                       ))}
                     </tbody>
@@ -1150,4 +1155,5 @@ export const AdminDashboard = () => {
       </div>
     </div>
   );
-};
+}; 
+  
