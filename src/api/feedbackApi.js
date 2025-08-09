@@ -117,7 +117,7 @@ export const api = {
    * Admin login
    */
   login: (password) => {
-    if (password === 'admin123') {
+    if (password === 'jeevs@7') {
       localStorage.setItem('isAdmin', 'true');
       return true;
     }
